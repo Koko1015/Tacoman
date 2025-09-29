@@ -1,301 +1,200 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The-Fantasy-Fan</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f0f0f0;
-      text-align: center;
-      color: #222;
-    }
+<h2>🏒 2-Player Hockey Challenge</h2>
+<div id="scoreboard">
+  <span id="p1Score">Player 1: 0</span> | 
+  <span id="p2Score">Player 2: 0</span> | 
+  <span id="timer">02:00</span>
+  <br>
+  <button onclick="startGame()">Start</button>
+  <button onclick="pauseGame()">Pause</button>
+</div>
+<canvas id="hockeyGame" width="800" height="400"></canvas>
 
-    header {
-      background: #1e1e1e;
-      padding: 20px;
-      color: white;
-    }
+<script>
+  const hockeyCanvas = document.getElementById("hockeyGame");
+  const hctx = hockeyCanvas.getContext("2d");
 
-    header h1 {
-      font-family: "Brush Script MT", cursive;
-      font-size: 3em;
-      margin: 0;
-    }
+  let puck = { x: 400, y: 200, radius: 10, vx: 0, vy: 0 };
+  let players = [
+    { x: 200, y: 200, radius: 15, color: "red", up: "w", down: "s", left: "a", right: "d" },
+    { x: 600, y: 200, radius: 15, color: "blue", up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight" }
+  ];
+  let keys = {};
+  let goalies = [
+    { x: 20, y: 150, width: 10, height: 100, vy: 2 },
+    { x: 770, y: 150, width: 10, height: 100, vy: -2 }
+  ];
 
-    .logo {
-      margin: 20px auto;
-      width: 200px;
-      height: 250px;
-      background: linear-gradient(180deg, red, white, blue);
-      border-radius: 15px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 2.5em;
-      font-family: "Brush Script MT", cursive;
-      color: black;
-      font-weight: bold;
-      border: 4px solid white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
+  let scores = [0, 0];
+  let confetti = [];
+  let timer = 120; // 2 minutes in seconds
+  let gameRunning = false;
+  let intervalId = null;
 
-    canvas {
-      display: block;
-      margin: 20px auto;
-      border: 3px solid #333;
-      border-radius: 10px;
-    }
+  function drawRink() {
+    hctx.fillStyle = "#87ceeb";
+    hctx.fillRect(0, 0, hockeyCanvas.width, hockeyCanvas.height);
 
-    footer {
-      background: #222;
-      color: white;
-      padding: 15px;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>The-Fantasy-Fan</h1>
-    <p>Your Fantasy Picks and Weekly Updates</p>
-    <div class="logo">10</div>
-  </header>
+    // center line
+    hctx.strokeStyle = "white";
+    hctx.beginPath();
+    hctx.moveTo(400, 0);
+    hctx.lineTo(400, hockeyCanvas.height);
+    hctx.stroke();
+  }
 
-  <!-- Football Mini Game -->
-  <h2>🏈 Field Goal Challenge</h2>
-  <canvas id="footballGame" width="800" height="400"></canvas>
+  function drawPuck() {
+    hctx.fillStyle = "black";
+    hctx.beginPath();
+    hctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI * 2);
+    hctx.fill();
+  }
 
-  <!-- Hockey Mini Game -->
-  <h2>🏒 2-Player Hockey Challenge</h2>
-  <canvas id="hockeyGame" width="800" height="400"></canvas>
-
-  <footer>
-    <p>&copy; 2025 The-Fantasy-Fan</p>
-  </footer>
-
-  <script>
-    /* ================= FOOTBALL GAME ================= */
-    const footballCanvas = document.getElementById("footballGame");
-    const fctx = footballCanvas.getContext("2d");
-
-    let football = { x: 380, y: 300, radius: 15, vx: 0, vy: 0, isDragging: false };
-    const goalPost = { x: 370, y: 50, width: 60, height: 10 };
-    let confettiPieces = [];
-
-    function drawFootballField() {
-      fctx.fillStyle = "green";
-      fctx.fillRect(0, 0, footballCanvas.width, footballCanvas.height);
-
-      // End zones
-      fctx.fillStyle = "blue";
-      fctx.fillRect(0, 0, footballCanvas.width, 50);
-      fctx.fillRect(0, footballCanvas.height - 50, footballCanvas.width, 50);
-      fctx.fillStyle = "white";
-      fctx.font = "30px Arial Black";
-      fctx.fillText("HAVE FUN", 320, 35);
-      fctx.fillText("HAVE FUN", 320, footballCanvas.height - 15);
-
-      // Goal post
-      fctx.fillStyle = "yellow";
-      fctx.fillRect(goalPost.x, goalPost.y, goalPost.width, goalPost.height);
-      fctx.fillRect(goalPost.x + 25, goalPost.y, 10, 100);
-      fctx.fillRect(goalPost.x, goalPost.y - 100, 10, 100);
-      fctx.fillRect(goalPost.x + 50, goalPost.y - 100, 10, 100);
-    }
-
-    function drawFootball() {
-      fctx.fillStyle = "brown";
-      fctx.beginPath();
-      fctx.ellipse(football.x, football.y, football.radius * 1.5, football.radius, 0, 0, Math.PI * 2);
-      fctx.fill();
-
-      fctx.strokeStyle = "white";
-      fctx.beginPath();
-      fctx.moveTo(football.x - 10, football.y);
-      fctx.lineTo(football.x + 10, football.y);
-      fctx.stroke();
-    }
-
-    function drawConfetti() {
-      confettiPieces.forEach((c) => {
-        fctx.fillStyle = c.color;
-        fctx.fillRect(c.x, c.y, c.size, c.size);
-        c.y += c.speed;
-      });
-      confettiPieces = confettiPieces.filter(c => c.y < footballCanvas.height);
-    }
-
-    function checkFieldGoal() {
-      if (
-        football.y < goalPost.y &&
-        football.x > goalPost.x &&
-        football.x < goalPost.x + goalPost.width
-      ) {
-        for (let i = 0; i < 200; i++) {
-          confettiPieces.push({
-            x: Math.random() * footballCanvas.width,
-            y: Math.random() * 100,
-            size: Math.random() * 6 + 2,
-            speed: Math.random() * 3 + 2,
-            color: ["red", "blue", "yellow", "pink", "orange", "green"][Math.floor(Math.random() * 6)]
-          });
-        }
-      }
-    }
-
-    function updateFootball() {
-      if (!football.isDragging) {
-        football.x += football.vx;
-        football.y += football.vy;
-        football.vx *= 0.99;
-        football.vy *= 0.99;
-        checkFieldGoal();
-      }
-    }
-
-    function footballLoop() {
-      fctx.clearRect(0, 0, footballCanvas.width, footballCanvas.height);
-      drawFootballField();
-      drawFootball();
-      drawConfetti();
-      updateFootball();
-      requestAnimationFrame(footballLoop);
-    }
-
-    footballCanvas.addEventListener("mousedown", (e) => {
-      const rect = footballCanvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      const dx = mouseX - football.x;
-      const dy = mouseY - football.y;
-      if (Math.sqrt(dx * dx + dy * dy) < football.radius * 2) {
-        football.isDragging = true;
-      }
-    });
-
-    footballCanvas.addEventListener("mouseup", (e) => {
-      if (football.isDragging) {
-        const rect = footballCanvas.getBoundingClientRect();
-        const releaseX = e.clientX - rect.left;
-        const releaseY = e.clientY - rect.top;
-        football.vx = (releaseX - football.x) * 0.3;
-        football.vy = (releaseY - football.y) * 0.3;
-        football.isDragging = false;
-      }
-    });
-
-    footballCanvas.addEventListener("mousemove", (e) => {
-      if (football.isDragging) {
-        const rect = footballCanvas.getBoundingClientRect();
-        football.x = e.clientX - rect.left;
-        football.y = e.clientY - rect.top;
-      }
-    });
-
-    footballLoop();
-
-    /* ================= HOCKEY GAME ================= */
-    const hockeyCanvas = document.getElementById("hockeyGame");
-    const hctx = hockeyCanvas.getContext("2d");
-
-    let puck = { x: 400, y: 200, radius: 10, vx: 0, vy: 0 };
-    let players = [
-      { x: 200, y: 200, radius: 15, color: "red", up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight" },
-      { x: 600, y: 200, radius: 15, color: "blue", up: "w", down: "s", left: "a", right: "d" }
-    ];
-    let keys = {};
-
-    let goalies = [
-      { x: 20, y: 150, width: 10, height: 100, vx: 2 },
-      { x: 770, y: 150, width: 10, height: 100, vx: -2 }
-    ];
-
-    function drawRink() {
-      hctx.fillStyle = "#87ceeb";
-      hctx.fillRect(0, 0, hockeyCanvas.width, hockeyCanvas.height);
-
-      hctx.strokeStyle = "white";
+  function drawPlayers() {
+    players.forEach(p => {
+      hctx.fillStyle = p.color;
       hctx.beginPath();
-      hctx.arc(400, 200, 75, 0, Math.PI * 2);
-      hctx.stroke();
-    }
-
-    function drawPuck() {
-      hctx.fillStyle = "black";
-      hctx.beginPath();
-      hctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI * 2);
+      hctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
       hctx.fill();
-    }
+    });
+  }
 
-    function drawPlayers() {
-      players.forEach(p => {
-        hctx.fillStyle = p.color;
-        hctx.beginPath();
-        hctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        hctx.fill();
+  function drawGoalies() {
+    hctx.fillStyle = "gray";
+    goalies.forEach(g => hctx.fillRect(g.x, g.y, g.width, g.height));
+  }
+
+  function updatePuck() {
+    puck.x += puck.vx;
+    puck.y += puck.vy;
+    puck.vx *= 0.98;
+    puck.vy *= 0.98;
+
+    // Bounce off walls
+    if (puck.y - puck.radius < 0 || puck.y + puck.radius > hockeyCanvas.height) puck.vy *= -1;
+
+    // Prevent puck going past goalies
+    goalies.forEach((g, i) => {
+      if (i === 0 && puck.x - puck.radius < g.x + g.width && puck.y > g.y && puck.y < g.y + g.height) puck.vx *= -1;
+      if (i === 1 && puck.x + puck.radius > g.x && puck.y > g.y && puck.y < g.y + g.height) puck.vx *= -1;
+    });
+
+    checkGoal();
+  }
+
+  function updatePlayers() {
+    players.forEach((p, idx) => {
+      if (keys[p.up]) p.y -= 3;
+      if (keys[p.down]) p.y += 3;
+      if (keys[p.left]) p.x -= 3;
+      if (keys[p.right]) p.x += 3;
+
+      // Collision with puck
+      let dx = puck.x - p.x;
+      let dy = puck.y - p.y;
+      let dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < p.radius + puck.radius) {
+        puck.vx = dx * 0.3;
+        puck.vy = dy * 0.3;
+      }
+    });
+  }
+
+  function updateGoalies() {
+    goalies.forEach(g => {
+      g.y += g.vy;
+      if (g.y < 0 || g.y + g.height > hockeyCanvas.height) g.vy *= -1;
+    });
+  }
+
+  function checkGoal() {
+    if (puck.x - puck.radius <= 0) {
+      scores[1]++; // Player 2 scores
+      resetPuck();
+      launchConfetti();
+    }
+    if (puck.x + puck.radius >= hockeyCanvas.width) {
+      scores[0]++; // Player 1 scores
+      resetPuck();
+      launchConfetti();
+    }
+  }
+
+  function resetPuck() {
+    puck.x = 400;
+    puck.y = 200;
+    puck.vx = 0;
+    puck.vy = 0;
+    updateScoreboard();
+  }
+
+  function updateScoreboard() {
+    document.getElementById("p1Score").textContent = `Player 1: ${scores[0]}`;
+    document.getElementById("p2Score").textContent = `Player 2: ${scores[1]}`;
+  }
+
+  function drawConfetti() {
+    confetti.forEach((c) => {
+      hctx.fillStyle = c.color;
+      hctx.fillRect(c.x, c.y, c.size, c.size);
+      c.y += c.speed;
+    });
+    confetti = confetti.filter(c => c.y < hockeyCanvas.height);
+  }
+
+  function launchConfetti() {
+    for (let i = 0; i < 100; i++) {
+      confetti.push({
+        x: Math.random() * hockeyCanvas.width,
+        y: Math.random() * 50,
+        size: Math.random() * 6 + 2,
+        speed: Math.random() * 3 + 2,
+        color: ["red", "blue", "yellow", "pink", "orange", "green"][Math.floor(Math.random() * 6)]
       });
     }
+  }
 
-    function drawGoalies() {
-      hctx.fillStyle = "gray";
-      goalies.forEach(g => {
-        hctx.fillRect(g.x, g.y, g.width, g.height);
-      });
+  function updateTimer() {
+    if (timer > 0) {
+      timer--;
+      let minutes = String(Math.floor(timer / 60)).padStart(2, "0");
+      let seconds = String(timer % 60).padStart(2, "0");
+      document.getElementById("timer").textContent = `${minutes}:${seconds}`;
+    } else {
+      pauseGame();
+      alert("⏰ Time’s up! Final Score: " + scores[0] + " - " + scores[1]);
     }
+  }
 
-    function updatePuck() {
-      puck.x += puck.vx;
-      puck.y += puck.vy;
-      puck.vx *= 0.98;
-      puck.vy *= 0.98;
-
-      if (puck.x - puck.radius < 0 || puck.x + puck.radius > hockeyCanvas.width) puck.vx *= -1;
-      if (puck.y - puck.radius < 0 || puck.y + puck.radius > hockeyCanvas.height) puck.vy *= -1;
-    }
-
-    function updatePlayers() {
-      players.forEach(p => {
-        if (keys[p.up]) p.y -= 3;
-        if (keys[p.down]) p.y += 3;
-        if (keys[p.left]) p.x -= 3;
-        if (keys[p.right]) p.x += 3;
-
-        let dx = puck.x - p.x;
-        let dy = puck.y - p.y;
-        let dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < p.radius + puck.radius) {
-          puck.vx = dx * 0.3;
-          puck.vy = dy * 0.3;
-        }
-      });
-    }
-
-    function updateGoalies() {
-      goalies.forEach(g => {
-        g.y += g.vx;
-        if (g.y < 0 || g.y + g.height > hockeyCanvas.height) g.vx *= -1;
-      });
-    }
-
-    function hockeyLoop() {
-      hctx.clearRect(0, 0, hockeyCanvas.width, hockeyCanvas.height);
-      drawRink();
-      drawPuck();
-      drawPlayers();
-      drawGoalies();
+  function hockeyLoop() {
+    hctx.clearRect(0, 0, hockeyCanvas.width, hockeyCanvas.height);
+    drawRink();
+    drawPuck();
+    drawPlayers();
+    drawGoalies();
+    drawConfetti();
+    if (gameRunning) {
       updatePuck();
       updatePlayers();
       updateGoalies();
-      requestAnimationFrame(hockeyLoop);
     }
+    requestAnimationFrame(hockeyLoop);
+  }
 
-    window.addEventListener("keydown", e => keys[e.key] = true);
-    window.addEventListener("keyup", e => keys[e.key] = false);
+  function startGame() {
+    if (!gameRunning) {
+      gameRunning = true;
+      if (!intervalId) intervalId = setInterval(updateTimer, 1000);
+    }
+  }
 
-    hockeyLoop();
-  </script>
-</body>
-</html>
+  function pauseGame() {
+    gameRunning = false;
+    clearInterval(intervalId);
+    intervalId = null;
+  }
+
+  window.addEventListener("keydown", e => keys[e.key] = true);
+  window.addEventListener("keyup", e => keys[e.key] = false);
+
+  hockeyLoop();
+</script>
