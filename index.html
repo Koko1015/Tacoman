@@ -32,15 +32,14 @@ button { margin:5px; padding:6px 12px; font-size:14px; cursor:pointer; }
   <p>Your Fantasy Picks and updates weekly. Tell your friends!</p>
 </header>
 
-<!-- RACE CAR GAME -->
 <section id="raceSection">
 <h2>🏎️ 2-Player Race Car Challenge</h2>
 <div id="raceScoreboard">Player 1 Laps: 0 | Player 2 Laps: 0 | Timer: 00:00</div>
 <div class="countdown" id="raceCountdown"></div>
 <canvas id="raceGame" width="800" height="400"></canvas>
+<button onclick="startRaceCountdown()">Start Race</button>
 </section>
 
-<!-- HOCKEY GAME -->
 <section id="hockeySection">
 <h2>🏒 2-Player Hockey Challenge</h2>
 <div id="hockeyScoreboard">
@@ -58,48 +57,35 @@ Player 1: 0 | Player 2: 0 | Timer: 02:00
 </audio>
 
 <script>
-// ========================
-// SHARED BACKGROUND MUSIC
-// ========================
+// ===== SHARED MUSIC =====
 const bgMusic = document.getElementById('bgMusic');
 function playMusic(){ if(bgMusic.paused) bgMusic.play(); }
 
-// ========================
-// RACE CAR GAME
-// ========================
+// ================= RACE CAR GAME =================
 const raceCanvas = document.getElementById('raceGame');
 const raceCtx = raceCanvas.getContext('2d');
-let countdownEl = document.getElementById('raceCountdown');
+const countdownEl = document.getElementById('raceCountdown');
 
-const track = { x:50, y:50, width:700, height:300 }; // simple rectangle track for demo
+const track = { x:50, y:50, width:700, height:300 };
 const spikes = [];
-for(let i=0;i<20;i++){
-  spikes.push({x:Math.random()*track.width+track.x, y:Math.random()*track.height+track.y, size:10});
-}
+for(let i=0;i<20;i++){ spikes.push({x:Math.random()*track.width+track.x, y:Math.random()*track.height+track.y, size:10}); }
 
 const cars = [
-  {x:100, y:100, color:"red", angle:0, speed:0, laps:0, keys:{up:'w',down:'s',left:'a',right:'d'}},
-  {x:200, y:120, color:"blue", angle:0, speed:0, laps:0, keys:{up:'i',down:'k',left:'j',right:'l'}}
+  {x:100, y:100, color:"red", angle:0, speed:0, laps:0, crossed:false, keys:{up:'w',down:'s',left:'a',right:'d'}},
+  {x:200, y:120, color:"blue", angle:0, speed:0, laps:0, crossed:false, keys:{up:'i',down:'k',left:'j',right:'l'}}
 ];
 
-let raceKeys={};
-let raceTime=0; // seconds
-let raceRunning=false;
-let raceCountdown=3;
-let raceInterval, raceCountdownInterval;
+let raceKeys={}, raceTime=0, raceRunning=false, raceCountdown=3, raceInterval, raceCountdownInterval;
+let confetti=[];
 
 function drawTrack(){
   raceCtx.fillStyle="#555"; raceCtx.fillRect(track.x,track.y,track.width,track.height);
-  // Track borders
-  raceCtx.strokeStyle="yellow"; raceCtx.lineWidth=5;
-  raceCtx.strokeRect(track.x,track.y,track.width,track.height);
-  // Draw spikes
+  raceCtx.strokeStyle="yellow"; raceCtx.lineWidth=5; raceCtx.strokeRect(track.x,track.y,track.width,track.height);
   spikes.forEach(s=>{
-    raceCtx.fillStyle="black"; raceCtx.beginPath(); raceCtx.moveTo(s.x,s.y-s.size); 
+    raceCtx.fillStyle="black"; raceCtx.beginPath(); raceCtx.moveTo(s.x,s.y-s.size);
     raceCtx.lineTo(s.x-s.size,s.y+s.size); raceCtx.lineTo(s.x+s.size,s.y+s.size); raceCtx.closePath(); raceCtx.fill();
   });
-});
-
+}
 function drawCars(){
   cars.forEach(c=>{
     raceCtx.save();
@@ -110,57 +96,40 @@ function drawCars(){
     raceCtx.restore();
   });
 }
-
 function updateCars(){
   cars.forEach(c=>{
-    // Controls
     if(raceKeys[c.keys.up]) c.speed+=0.2;
     if(raceKeys[c.keys.down]) c.speed-=0.2;
-    if(raceKeys[c.keys.left]) c.angle -=0.05;
-    if(raceKeys[c.keys.right]) c.angle +=0.05;
-    // Friction
-    c.speed *=0.95;
-    // Move
+    if(raceKeys[c.keys.left]) c.angle-=0.05;
+    if(raceKeys[c.keys.right]) c.angle+=0.05;
+    c.speed*=0.95;
     c.x += Math.sin(c.angle)*c.speed;
     c.y -= Math.cos(c.angle)*c.speed;
-    // Keep on track
     c.x = Math.max(track.x, Math.min(track.x+track.width, c.x));
     c.y = Math.max(track.y, Math.min(track.y+track.height, c.y));
-    // Spike collision
     spikes.forEach(s=>{
       let dx=c.x-s.x, dy=c.y-s.y;
       if(Math.sqrt(dx*dx+dy*dy)<20) c.speed*=0.3;
     });
-    // Lap check (simple demo: cross top border)
-    if(c.y<=track.y && !c.crossed){ c.laps++; c.crossed=true; launchConfetti(); }
+    if(c.y<=track.y && !c.crossed){ c.laps++; c.crossed=true; launchConfetti(); checkRaceWinner(); }
     if(c.y>track.y) c.crossed=false;
   });
-  updateRaceScoreboard();
+  raceScoreboardUpdate();
 }
-
-function updateRaceScoreboard(){
-  raceCtx.fillStyle="black";
-  document.getElementById('raceScoreboard').textContent =
+function raceScoreboardUpdate(){
+  document.getElementById('raceScoreboard').textContent=
     `Player 1 Laps: ${cars[0].laps} | Player 2 Laps: ${cars[1].laps} | Timer: ${String(Math.floor(raceTime/60)).padStart(2,"0")}:${String(raceTime%60).padStart(2,"0")}`;
 }
-
 function launchConfetti(){
-  for(let i=0;i<100;i++){
-    confetti.push({ x:Math.random()*raceCanvas.width, y:0, size:Math.random()*6+2, speed:Math.random()*3+2,
-      color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)] });
-  }
+  for(let i=0;i<100;i++){ confetti.push({ x:Math.random()*raceCanvas.width, y:0, size:Math.random()*6+2, speed:Math.random()*3+2,
+    color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)] }); }
 }
-let confetti = [];
-
 function drawConfetti(){
   confetti.forEach(c=>{
-    raceCtx.fillStyle=c.color;
-    raceCtx.fillRect(c.x,c.y,c.size,c.size);
-    c.y+=c.speed;
+    raceCtx.fillStyle=c.color; raceCtx.fillRect(c.x,c.y,c.size,c.size); c.y+=c.speed;
   });
-  confetti = confetti.filter(c=>c.y<raceCanvas.height);
+  confetti=confetti.filter(c=>c.y<raceCanvas.height);
 }
-
 function raceLoop(){
   raceCtx.clearRect(0,0,raceCanvas.width,raceCanvas.height);
   drawTrack();
@@ -169,35 +138,36 @@ function raceLoop(){
   if(raceRunning) updateCars();
   requestAnimationFrame(raceLoop);
 }
-
 function startRaceCountdown(){
-  countdownEl.textContent = raceCountdown;
+  playMusic();
+  raceCountdown=3; countdownEl.textContent=raceCountdown;
   raceCountdownInterval = setInterval(()=>{
     raceCountdown--;
     if(raceCountdown>0) countdownEl.textContent=raceCountdown;
-    else{ countdownEl.textContent="GO!"; raceRunning=true; playMusic(); clearInterval(raceCountdownInterval); setTimeout(()=>countdownEl.textContent="",1000); }
+    else{ countdownEl.textContent="GO!"; raceRunning=true; clearInterval(raceCountdownInterval); setTimeout(()=>countdownEl.textContent="",1000); }
   },1000);
-  raceInterval = setInterval(()=>{ if(raceRunning) raceTime++; },1000);
+  raceInterval = setInterval(()=>{ if(raceRunning) raceTime++; raceScoreboardUpdate(); },1000);
 }
-
+function checkRaceWinner(){
+  cars.forEach(c=>{
+    if(c.laps>=3){ raceRunning=false; clearInterval(raceInterval); launchConfetti(); alert(`${c.color.toUpperCase()} wins!`); }
+  });
+}
 raceLoop();
+window.addEventListener("keydown",e=>raceKeys[e.key.toLowerCase()]=true);
+window.addEventListener("keyup",e=>raceKeys[e.key.toLowerCase()]=false);
 
-window.addEventListener("keydown", e=>{ raceKeys[e.key.toLowerCase()]=true; });
-window.addEventListener("keyup", e=>{ raceKeys[e.key.toLowerCase()]=false; });
-
-// ========================
-// HOCKEY GAME
-// ========================
+// ================= HOCKEY GAME =================
 const hockeyCanvas=document.getElementById("hockeyGame");
 const hctx=hockeyCanvas.getContext("2d");
+
 let puck={x:400,y:200,radius:10,vx:0,vy:0};
 let players=[
   {x:200,y:200,radius:15,color:"red",up:"w",down:"s",left:"a",right:"d"},
   {x:600,y:200,radius:15,color:"blue",up:"i",down:"k",left:"j",right:"l"}
 ];
-let keys={};
-let nets=[{x:0,y:150,width:20,height:100},{x:780,y:150,width:20,height:100}];
-let scores=[0,0]; let confetti2=[]; let timer=120; let gameRunning=false; let intervalId=null;
+let keys={}, nets=[{x:0,y:150,width:20,height:100},{x:780,y:150,width:20,height:100}];
+let scores=[0,0], confetti2=[], timer=120, gameRunning=false, intervalId=null;
 
 function drawHockeyRink(){
   hctx.fillStyle="#87ceeb"; hctx.fillRect(0,0,hockeyCanvas.width,hockeyCanvas.height);
@@ -206,63 +176,9 @@ function drawHockeyRink(){
     hctx.fillStyle="red"; hctx.fillRect(net.x, net.y, net.width, net.height);
     hctx.fillStyle="white"; hctx.fillRect(net.x+2, net.y+2, net.width-4, net.height-4);
     hctx.strokeStyle="gray"; hctx.lineWidth=1;
-    for(let i=net.y+2;i<net.y+net.height-2;i+=8){
-      hctx.beginPath(); hctx.moveTo(net.x+2,i); hctx.lineTo(net.x+net.width-2,i); hctx.stroke();
-    }
-    for(let j=net.x+2;j<net.x+net.width-2;j+=8){
-      hctx.beginPath(); hctx.moveTo(j,net.y+2); hctx.lineTo(j,net.y+net.height-2); hctx.stroke();
-    }
+    for(let i=net.y+2;i<net.y+net.height-2;i+=8){ hctx.beginPath(); hctx.moveTo(net.x+2,i); hctx.lineTo(net.x+net.width-2,i); hctx.stroke(); }
+    for(let j=net.x+2;j<net.x+net.width-2;j+=8){ hctx.beginPath(); hctx.moveTo(j,net.y+2); hctx.lineTo(j,net.y+net.height-2); hctx.stroke(); }
   });
 }
-
-function drawHockeyPuck(){
-  hctx.fillStyle="black"; hctx.beginPath(); hctx.arc(puck.x,puck.y,puck.radius,0,Math.PI*2); hctx.fill();
-}
-function drawHockeyPlayers(){
-  players.forEach(p=>{ hctx.fillStyle=p.color; hctx.beginPath(); hctx.arc(p.x,p.y,p.radius,0,Math.PI*2); hctx.fill(); });
-}
-function updatePuckHockey(){
-  puck.x+=puck.vx; puck.y+=puck.vy; puck.vx*=0.98; puck.vy*=0.98;
-  if(puck.y-puck.radius<0 || puck.y+puck.radius>hockeyCanvas.height) puck.vy*=-1;
-  // Goal check
-  if(puck.x-puck.radius<=nets[0].x+nets[0].width && puck.y>nets[0].y && puck.y<nets[0].y+nets[0].height){
-    scores[1]++; resetPuckHockey(); launchConfettiHockey();
-  }
-  if(puck.x+puck.radius>=nets[1].x && puck.y>nets[1].y && puck.y<nets[1].y+nets[1].height){
-    scores[0]++; resetPuckHockey(); launchConfettiHockey();
-  }
-  if(puck.x-puck.radius<0) puck.x=puck.radius;
-  if(puck.x+puck.radius>hockeyCanvas.width) puck.x=hockeyCanvas.width-puck.radius;
-}
-function updatePlayersHockey(){
-  players.forEach(p=>{
-    if(keys[p.up]) p.y-=3; if(keys[p.down]) p.y+=3;
-    if(keys[p.left]) p.x-=3; if(keys[p.right]) p.x+=3;
-    p.x=Math.max(p.radius,Math.min(hockeyCanvas.width-p.radius,p.x));
-    p.y=Math.max(p.radius,Math.min(hockeyCanvas.height-p.radius,p.y));
-    let dx=puck.x-p.x,dy=puck.y-p.y,dist=Math.sqrt(dx*dx+dy*dy);
-    if(dist<p.radius+puck.radius){ puck.vx=dx*0.3; puck.vy=dy*0.3; }
-  });
-}
-function resetPuckHockey(){ puck.x=400; puck.y=200; puck.vx=0; puck.vy=0; updateHockeyScoreboard(); }
-function updateHockeyScoreboard(){
-  document.getElementById("hockeyScoreboard").innerHTML=
-    `Player 1: ${scores[0]} | Player 2: ${scores[1]} | Timer: ${String(Math.floor(timer/60)).padStart(2,"0")}:${String(timer%60).padStart(2,"0")}
-    <br><button onclick="startHockey()">Start</button> <button onclick="pauseHockey()">Pause</button> <button onclick="restartHockey()">Restart</button>`;
-}
-function drawConfettiHockey(){ confetti2.forEach(c=>{ hctx.fillStyle=c.color; hctx.fillRect(c.x,c.y,c.size,c.size); c.y+=c.speed; });
-confetti2=confetti2.filter(c=>c.y<hockeyCanvas.height); }
-function launchConfettiHockey(){ for(let i=0;i<100;i++){ confetti2.push({ x:Math.random()*hockeyCanvas.width, y:0, size:Math.random()*6+2, speed:Math.random()*3+2, color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)] }); } }
-function updateHockeyTimer(){ if(timer>0){ timer--; updateHockeyScoreboard(); } else{ pauseHockey(); alert(`⏰ Time's up! Final Score: ${scores[0]} - ${scores[1]}`); } }
-function hockeyLoop(){ hctx.clearRect(0,0,hockeyCanvas.width,hockeyCanvas.height); drawHockeyRink(); drawHockeyPuck(); drawHockeyPlayers(); drawConfettiHockey();
-if(gameRunning){ updatePuckHockey(); updatePlayersHockey(); } requestAnimationFrame(hockeyLoop); }
-function startHockey(){ if(!gameRunning){ gameRunning=true; if(!intervalId) intervalId=setInterval(updateHockeyTimer,1000); playMusic(); } }
-function pauseHockey(){ gameRunning=false; clearInterval(intervalId); intervalId=null; }
-function restartHockey(){ scores=[0,0]; timer=120; resetPuckHockey(); updateHockeyScoreboard(); }
-window.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
-window.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
-hockeyLoop();
-</script>
-</body>
-</html>
+function drawHockeyPuck(){ hctx.fillStyle="black"; hctx.beginPath(); hctx.arc
 
