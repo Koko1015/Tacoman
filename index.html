@@ -1,25 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The-Fantasy-Fan</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>The-Fantasy-Fan — Games</title>
 <style>
-body { margin:0; font-family: Arial, sans-serif; background:#f0f0f0; text-align:center; }
-header { margin:20px; }
-.logo { display:inline-block; }
-.logo-jersey { width:150px; height:150px; background:linear-gradient(to bottom, orange 33%, lime 33% 66%, pink 66%);
- border:4px solid black; border-radius:15px; position:relative; }
-.logo-jersey::after { content:"10"; position:absolute; top:40%; left:50%; transform:translate(-50%,-50%);
- font-size:40px; font-weight:bold; color:black; }
-.logo-text { font-family:cursive; font-size:28px; margin-top:10px; }
-section { margin-bottom:50px; }
-canvas { display:block; margin:20px auto; border:2px solid #000; background:#eee; }
-#raceScoreboard, #hockeyScoreboard { font-size:18px; margin:10px auto; width:400px; padding:8px; border-radius:8px; font-weight:bold; color:white; }
-#raceScoreboard { background: linear-gradient(to right, orange, pink, lime); }
-#hockeyScoreboard { background: linear-gradient(to right, blue, cyan, purple); }
-button { margin:5px; padding:6px 12px; font-size:14px; cursor:pointer; }
-.countdown { font-size:48px; font-weight:bold; color:red; margin:10px; }
+  :root {
+    --panel-padding: 12px;
+  }
+  body { margin:0; font-family: Arial, Helvetica, sans-serif; background:#f2f5f8; color:#111; text-align:center; }
+  header { padding:18px; margin:8px 0; }
+  .logo { display:inline-block; text-align:center; }
+  .logo-jersey{ width:150px;height:150px;border-radius:16px;border:4px solid #111; background:linear-gradient(to bottom, red 33%, white 33% 66%, blue 66%); position:relative; }
+  .logo-jersey::after{ content:"10"; position:absolute; left:50%; top:40%; transform:translate(-50%,-50%); font-size:44px; font-weight:700; color:#000; }
+  .logo-text{ font-family: 'Brush Script MT', cursive; font-size:28px; margin-top:8px; }
+
+  section { margin:26px auto; padding:16px; max-width:980px; background:linear-gradient(180deg,#ffffff, #f7f9fb); border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+  h2 { margin:6px 0 12px 0; }
+  canvas { background:#bfdbe8; display:block; margin:12px auto; border-radius:8px; border:2px solid #333; }
+
+  .scoreboard {
+    display:inline-block;
+    padding:var(--panel-padding);
+    border-radius:10px;
+    color:#fff;
+    font-weight:700;
+    margin-bottom:8px;
+  }
+  #raceScore { background: linear-gradient(90deg,#ff7a18,#ff45a1,#8cff3c); width:760px; }
+  #hockeyScore { background: linear-gradient(90deg,#2b9cff,#00e5a5,#9b5cff); width:760px; }
+
+  button { margin:8px 6px; padding:8px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
+  .btn-start { background:#2ecc71; color:#fff; }
+  .btn-pause { background:#f39c12; color:#fff; }
+  .btn-reset { background:#e74c3c; color:#fff; }
+
+  .countdown { font-size:48px; font-weight:900; color:#e84393; margin-top:8px; height:56px; }
+
+  /* small responsive */
+  @media (max-width:900px){
+    canvas { width:95%; height:auto; }
+    #raceScore, #hockeyScore { width:95%; }
+  }
 </style>
 </head>
 <body>
@@ -29,164 +51,641 @@ button { margin:5px; padding:6px 12px; font-size:14px; cursor:pointer; }
     <div class="logo-jersey"></div>
     <div class="logo-text">The-Fantasy-Fan</div>
   </div>
-  <p>Your Fantasy Picks and updates weekly. Tell your friends!</p>
+  <p>Top: Race arena • Scroll down for Hockey — have fun!</p>
 </header>
 
+<!-- ===== RACE SECTION ===== -->
 <section id="raceSection">
-<h2>🏎️ 2-Player Race Car Challenge</h2>
-<div id="raceScoreboard">Player 1 Laps: 0 | Player 2 Laps: 0 | Timer: 00:00</div>
-<div class="countdown" id="raceCountdown"></div>
-<canvas id="raceGame" width="800" height="400"></canvas>
-<button onclick="startRaceCountdown()">Start Race</button>
+  <h2>🏟️ Stadium Race — First to 3 Laps</h2>
+  <div id="raceScore" class="scoreboard">Player 1 Laps: 0 | Player 2 Laps: 0 | Time: 00:00</div>
+  <div class="countdown" id="raceCountdown"></div>
+  <canvas id="raceCanvas" width="800" height="440"></canvas>
+  <div>
+    <button class="btn-start" onclick="initRaceStart()">Start Race (3-2-1)</button>
+    <button class="btn-pause" onclick="toggleRacePause()">Pause/Resume</button>
+    <button class="btn-reset" onclick="resetRace()">Reset Race</button>
+  </div>
 </section>
 
+<!-- ===== HOCKEY SECTION ===== -->
 <section id="hockeySection">
-<h2>🏒 2-Player Hockey Challenge</h2>
-<div id="hockeyScoreboard">
-Player 1: 0 | Player 2: 0 | Timer: 02:00
-<br>
-<button onclick="startHockey()">Start</button>
-<button onclick="pauseHockey()">Pause</button>
-<button onclick="restartHockey()">Restart</button>
-</div>
-<canvas id="hockeyGame" width="800" height="400"></canvas>
+  <h2>🏒 Hockey — 2 Players</h2>
+  <div id="hockeyScore" class="scoreboard">Player 1: 0 | Player 2: 0 | Timer: 02:00</div>
+  <canvas id="hockeyCanvas" width="800" height="440"></canvas>
+  <div>
+    <button class="btn-start" onclick="startHockey()">Start</button>
+    <button class="btn-pause" onclick="pauseHockey()">Pause</button>
+    <button class="btn-reset" onclick="restartHockey()">Restart</button>
+  </div>
 </section>
 
-<audio id="bgMusic" loop>
+<!-- Audio (shared). Put your music.mp3 next to index.html -->
+<audio id="bgAudio" loop preload="auto">
   <source src="music.mp3" type="audio/mpeg">
 </audio>
 
 <script>
-// ===== SHARED MUSIC =====
-const bgMusic=document.getElementById("bgMusic");
-function playMusic(){ if(bgMusic.paused) bgMusic.play(); }
+/* ---------------------------------------------------------------------------
+  Shared helpers: confetti, play sound/music, format time
+----------------------------------------------------------------------------*/
+const bgAudio = document.getElementById('bgAudio');
+function playMusicOnce() {
+  // browsers block audoplay; starting music only after user action (Start button) is insured
+  if (bgAudio && bgAudio.paused) {
+    bgAudio.play().catch(()=>{ /* ignore autoplay error */ });
+  }
+}
+function formatTimeSeconds(s) {
+  const mm = String(Math.floor(s/60)).padStart(2,'0');
+  const ss = String(s % 60).padStart(2,'0');
+  return `${mm}:${ss}`;
+}
 
-// ================= RACE CAR GAME =================
-const raceCanvas=document.getElementById("raceGame");
-const raceCtx=raceCanvas.getContext("2d");
-const countdownEl=document.getElementById("raceCountdown");
+function makeConfettiArray(count, width, height){
+  const arr=[];
+  for(let i=0;i<count;i++){
+    arr.push({
+      x: Math.random()*width,
+      y: -Math.random()*height*0.5,
+      size: Math.random()*6+2,
+      speed: Math.random()*2+1,
+      color: ['#ff3b30','#ffcc00','#00d084','#3b82f6','#f012be','#ff7a18'][Math.floor(Math.random()*6)]
+    });
+  }
+  return arr;
+}
 
-const track={x:50,y:50,width:700,height:300};
-const spikes=[];
-for(let i=0;i<20;i++){ spikes.push({x:Math.random()*track.width+track.x,y:Math.random()*track.height+track.y,size:10}); }
+/* ============================
+   RACE GAME
+   - top-down stadium track drawn in canvas
+   - 2 cars: WASD and IJKL
+   - spikes slow cars
+   - fans drawn in stands around track
+   - laps counted by crossing finish line top center (with per-car "crossed" flag)
+============================ */
+const raceCanvas = document.getElementById('raceCanvas');
+const rctx = raceCanvas.getContext('2d');
+const raceCountdownEl = document.getElementById('raceCountdown');
+const raceScoreEl = document.getElementById('raceScore');
 
-const cars=[
- {x:100,y:100,color:"red",angle:0,speed:0,laps:0,crossed:false,keys:{up:'w',down:'s',left:'a',right:'d'}},
- {x:200,y:120,color:"blue",angle:0,speed:0,laps:0,crossed:false,keys:{up:'i',down:'k',left:'j',right:'l'}}
+let raceState = {
+  running: false,
+  paused: false,
+  time: 0,
+  countdown: 0,
+  lapsToWin: 3,
+  confetti: []
+};
+
+// track parameters: we'll draw an outer rounded shape and inner hole to form a curvy circuit
+const track = {
+  cx: 400, cy: 220,
+  outerR: 190,
+  innerR: 90
+};
+
+// create some inward curves to mimic the S-shape — we will draw with multiple arcs/paths
+function drawRaceTrack(ctx) {
+  // stadium background (grass)
+  ctx.fillStyle = '#2f7a2f';
+  ctx.fillRect(0,0,raceCanvas.width,raceCanvas.height);
+
+  // fans stands - draw repeating dots around edges to simulate crowd
+  drawFans(ctx);
+
+  // draw asphalt track as donut with some "S" variation
+  const {cx, cy, outerR, innerR} = track;
+
+  // outer shape
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // outer path (wavy circle)
+  ctx.beginPath();
+  for (let a=0; a<=Math.PI*2+0.01; a+=0.02) {
+    // add a wobble to create straights & curves
+    const wobble = Math.sin(a*3)*20;
+    const r = outerR + wobble;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r * 0.9; // slight squash
+    if (a===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#444';
+  ctx.fill();
+
+  // inner path cutout
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  for (let a=0; a<=Math.PI*2+0.01; a+=0.02) {
+    const wobble = Math.cos(a*3)*12;
+    const r = innerR + wobble;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r * 0.9;
+    if (a===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+
+  // draw lane markings (center line)
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([10, 8]);
+  ctx.beginPath();
+  for (let a=0; a<=Math.PI*2+0.01; a+=0.04) {
+    const wobble = Math.sin(a*3)*6;
+    const r = (outerR + innerR) / 2 + wobble;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r * 0.9;
+    if (a===0) ctx.moveTo(x, y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // finish line top center: draw small gate and a straight line across track between inner/outer
+  const finishA = -Math.PI/2; // top
+  const rOut = outerR;
+  const rIn = innerR;
+  // compute two points across track at top
+  const p1 = { x: cx + Math.cos(finishA) * rIn, y: cy + Math.sin(finishA) * rIn * 0.9 };
+  const p2 = { x: cx + Math.cos(finishA) * rOut, y: cy + Math.sin(finishA) * rOut * 0.9 };
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.stroke();
+
+  ctx.restore();
+
+  // draw a small start/finish banner
+  ctx.fillStyle = '#222';
+  ctx.font = '18px Arial';
+  ctx.fillText('FINISH', track.cx - 30, track.cy - track.outerR - 6);
+}
+
+// fans in the stands as small circles around canvas edges
+function drawFans(ctx) {
+  const w = raceCanvas.width, h = raceCanvas.height;
+  // top row
+  for (let x=30; x<w-30; x+=10) {
+    ctx.fillStyle = (Math.random()>0.6) ? '#ffcc00' : (Math.random()>0.5 ? '#ff6b6b' : '#6bc2ff');
+    ctx.fillRect(x, 8 + Math.floor(Math.random()*3), 6, 6);
+  }
+  // bottom row
+  for (let x=30; x<w-30; x+=10) {
+    ctx.fillStyle = (Math.random()>0.6) ? '#ffcc00' : (Math.random()>0.5 ? '#ff6b6b' : '#6bc2ff');
+    ctx.fillRect(x, h-16 - Math.floor(Math.random()*3), 6, 6);
+  }
+  // left and right small fans
+  for (let y=40; y<h-40; y+=14) {
+    if (y % 28 === 0) {
+      ctx.fillStyle = '#ffd54f';
+      ctx.fillRect(6, y + (Math.random()*4-2), 6, 6);
+      ctx.fillRect(w-12, y + (Math.random()*4-2), 6, 6);
+    }
+  }
+}
+
+// place spikes on some inside parts of track (precomputed)
+const spikes = [];
+(function placeSpikes(){
+  const {cx,cy,outerR,innerR} = track;
+  // place spikes along the inner side quadrants
+  for (let i=0;i<30;i++){
+    const angle = Math.PI * (0.25 + Math.random()*1.5); // around top-left to bottom-right
+    const r = innerR + 20 + Math.random()*30;
+    const x = cx + Math.cos(angle)*r;
+    const y = cy + Math.sin(angle)*r*0.9;
+    spikes.push({x,y,size:8});
+  }
+})();
+
+// cars: two players, with simple physics
+const cars = [
+  {x: track.cx, y: track.cy - track.outerR + 30, angle: 0, speed: 0, color:'#e74c3c', laps:0, crossed:false, startAngle:-Math.PI/2, keys:{up:'w',down:'s',left:'a',right:'d'}},
+  {x: track.cx + 30, y: track.cy - track.outerR + 30, angle: 0, speed: 0, color:'#3498db', laps:0, crossed:false, startAngle:-Math.PI/2, keys:{up:'i',down:'k',left:'j',right:'l'}}
 ];
 
-let raceKeys={},raceTime=0,raceRunning=false,raceCountdown=3,raceInterval,raceCountdownInterval;
-let confetti=[];
+const raceKeys = {};
+window.addEventListener('keydown', e => raceKeys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => raceKeys[e.key.toLowerCase()] = false);
 
-function drawTrack(){
-  raceCtx.fillStyle="#555";raceCtx.fillRect(track.x,track.y,track.width,track.height);
-  raceCtx.strokeStyle="yellow";raceCtx.lineWidth=5;raceCtx.strokeRect(track.x,track.y,track.width,track.height);
-  spikes.forEach(s=>{
-    raceCtx.fillStyle="black";raceCtx.beginPath();raceCtx.moveTo(s.x,s.y-s.size);
-    raceCtx.lineTo(s.x-s.size,s.y+s.size);raceCtx.lineTo(s.x+s.size,s.y+s.size);raceCtx.closePath();raceCtx.fill();
-  });
+// detect finish crossing: we use top segment: when y < (track.cy - outerR + 6) and previous was below -> count lap
+function checkLapCrossing(car) {
+  const topY = track.cy - track.outerR + 6;
+  if (car.y < topY && !car.crossed) {
+    car.laps++;
+    car.crossed = true;
+    raceState.confetti = raceState.confetti.concat(makeConfettiArray(60, raceCanvas.width, raceCanvas.height));
+    updateRaceScoreboard();
+    checkRaceWinner();
+  }
+  if (car.y > topY + 12) car.crossed = false;
 }
-function drawCars(){
+
+function drawCars(ctx){
   cars.forEach(c=>{
-    raceCtx.save();raceCtx.translate(c.x,c.y);raceCtx.rotate(c.angle);
-    raceCtx.fillStyle=c.color;raceCtx.fillRect(-10,-15,20,30);raceCtx.restore();
+    // draw car as rotated rectangle with small top
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.angle);
+    ctx.fillStyle = c.color;
+    ctx.fillRect(-10, -14, 20, 28);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(-6, -8, 12, 5);
+    ctx.restore();
   });
 }
+
 function updateCars(){
   cars.forEach(c=>{
-    if(raceKeys[c.keys.up])c.speed+=0.2;
-    if(raceKeys[c.keys.down])c.speed-=0.2;
-    if(raceKeys[c.keys.left])c.angle-=0.05;
-    if(raceKeys[c.keys.right])c.angle+=0.05;
-    c.speed*=0.95;
-    c.x+=Math.sin(c.angle)*c.speed;
-    c.y-=Math.cos(c.angle)*c.speed;
-    c.x=Math.max(track.x,Math.min(track.x+track.width,c.x));
-    c.y=Math.max(track.y,Math.min(track.y+track.height,c.y));
+    // control handling
+    if (raceKeys[c.keys.up]) c.speed += 0.18;
+    if (raceKeys[c.keys.down]) c.speed -= 0.22;
+    if (raceKeys[c.keys.left]) c.angle -= 0.06;
+    if (raceKeys[c.keys.right]) c.angle += 0.06;
+
+    // friction & clamp
+    c.speed *= 0.96;
+    if (c.speed > 6) c.speed = 6;
+    if (c.speed < -2) c.speed = -2;
+
+    // move
+    c.x += Math.sin(c.angle) * c.speed;
+    c.y -= Math.cos(c.angle) * c.speed;
+
+    // keep within track bounding box so cars don't leave stadium area
+    // project back if outside outer radius
+    const dx = c.x - track.cx, dy = (c.y - track.cy)/0.9;
+    const r = Math.sqrt(dx*dx + dy*dy);
+    if (r > track.outerR - 8) {
+      // push back inward
+      const nx = dx / r, ny = dy / r;
+      c.x = track.cx + nx * (track.outerR - 12);
+      c.y = track.cy + ny * (track.outerR - 12) * 0.9;
+      c.speed *= 0.6;
+    }
+    // keep out of inner hole
+    const rInner = Math.sqrt(dx*dx + dy*dy);
+    if (rInner < track.innerR + 12) {
+      const nx = dx / rInner, ny = dy / rInner;
+      c.x = track.cx + nx * (track.innerR + 14);
+      c.y = track.cy + ny * (track.innerR + 14) * 0.9;
+      c.speed *= 0.6;
+    }
+
+    // spike collisions
     spikes.forEach(s=>{
-      let dx=c.x-s.x,dy=c.y-s.y;
-      if(Math.sqrt(dx*dx+dy*dy)<20)c.speed*=0.3;
+      const dx = c.x - s.x, dy = c.y - s.y;
+      if (Math.sqrt(dx*dx + dy*dy) < s.size + 12){
+        c.speed *= 0.4; // big slow down
+      }
     });
-    if(c.y<=track.y && !c.crossed){c.laps++;c.crossed=true;launchConfetti();checkRaceWinner();}
-    if(c.y>track.y)c.crossed=false;
+
+    // lap crossing
+    checkLapCrossing(c);
   });
-  raceScoreboardUpdate();
 }
-function raceScoreboardUpdate(){
-  document.getElementById("raceScoreboard").textContent=
-  `Player 1 Laps: ${cars[0].laps} | Player 2 Laps: ${cars[1].laps} | Timer: ${String(Math.floor(raceTime/60)).padStart(2,"0")}:${String(raceTime%60).padStart(2,"0")}`;
+
+// confetti draw for race
+function drawRaceConfetti() {
+  rctx.fillStyle = '#fff';
+  raceState.confetti.forEach((c)=> {
+    rctx.fillStyle = c.color;
+    rctx.fillRect(c.x, c.y, c.size, c.size);
+    c.y += c.speed;
+  });
+  raceState.confetti = raceState.confetti.filter(c => c.y < raceCanvas.height);
 }
-function launchConfetti(){
-  for(let i=0;i<100;i++){ confetti.push({x:Math.random()*raceCanvas.width,y:0,size:Math.random()*6+2,speed:Math.random()*3+2,
-  color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)]}); }
+
+// render spikes and fans more decoratively
+function drawSpikes(ctx) {
+  spikes.forEach(s=>{
+    ctx.fillStyle='#333';
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y - s.size);
+    ctx.lineTo(s.x - s.size, s.y + s.size);
+    ctx.lineTo(s.x + s.size, s.y + s.size);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.fillRect(s.x-1, s.y-1, 2, 2);
+  });
 }
-function drawConfetti(){
-  confetti.forEach(c=>{raceCtx.fillStyle=c.color;raceCtx.fillRect(c.x,c.y,c.size,c.size);c.y+=c.speed;});
-  confetti=confetti.filter(c=>c.y<raceCanvas.height);
+
+function updateRaceScoreboard() {
+  raceScoreEl.textContent = `Player 1 Laps: ${cars[0].laps} | Player 2 Laps: ${cars[1].laps} | Time: ${formatTimeSeconds(raceState.time)}`;
 }
-function raceLoop(){
-  raceCtx.clearRect(0,0,raceCanvas.width,raceCanvas.height);
-  drawTrack();drawCars();drawConfetti();
-  if(raceRunning)updateCars();
+
+function checkRaceWinner() {
+  cars.forEach(c=>{
+    if (c.laps >= raceState.lapsToWin) {
+      raceState.running = false;
+      clearInterval(raceState.timerInterval);
+      raceState.confetti = raceState.confetti.concat(makeConfettiArray(150, raceCanvas.width, raceCanvas.height));
+      setTimeout(()=>{ alert(`${c.color.toUpperCase()} car wins the race!`); }, 200);
+    }
+  });
+}
+
+function raceLoop() {
+  rctx.clearRect(0,0,raceCanvas.width,raceCanvas.height);
+  drawRaceTrack(rctx);
+  // draw spikes inside track
+  drawSpikes(rctx);
+  drawCars(rctx);
+  drawRaceConfetti();
+  if (raceState.running && !raceState.paused) {
+    updateCars();
+  }
   requestAnimationFrame(raceLoop);
 }
-function startRaceCountdown(){
-  playMusic();
-  raceCountdown=3;countdownEl.textContent=raceCountdown;
-  raceCountdownInterval=setInterval(()=>{
-    raceCountdown--;
-    if(raceCountdown>0)countdownEl.textContent=raceCountdown;
-    else{countdownEl.textContent="GO!";raceRunning=true;clearInterval(raceCountdownInterval);setTimeout(()=>countdownEl.textContent="",1000);}
-  },1000);
-  raceInterval=setInterval(()=>{if(raceRunning)raceTime++;raceScoreboardUpdate();},1000);
-}
-function checkRaceWinner(){
-  cars.forEach(c=>{if(c.laps>=3){raceRunning=false;clearInterval(raceInterval);launchConfetti();alert(`${c.color.toUpperCase()} wins!`);}});
-}
 raceLoop();
-window.addEventListener("keydown",e=>raceKeys[e.key.toLowerCase()]=true);
-window.addEventListener("keyup",e=>raceKeys[e.key.toLowerCase()]=false);
 
-// ================= HOCKEY GAME =================
-const hockeyCanvas=document.getElementById("hockeyGame");
-const hctx=hockeyCanvas.getContext("2d");
+// race start/pause/reset helpers
+function initRaceStart() {
+  // reset small values & start countdown
+  cars.forEach(c => { c.laps = 0; c.crossed = false; c.x = track.cx + (Math.random()*40-20); c.y = track.cy - track.outerR + 30 + Math.random()*6; c.speed = 0; });
+  raceState.confetti = [];
+  raceState.time = 0;
+  updateRaceScoreboard();
+  // countdown 3-2-1
+  raceState.countdown = 3;
+  raceCountdownEl.textContent = raceState.countdown;
+  playMusicOnce();
+  raceState.running = false;
+  raceState.paused = false;
+  clearInterval(raceState.timerInterval);
+  const cd = setInterval(()=>{
+    raceState.countdown--;
+    if (raceState.countdown > 0) {
+      raceCountdownEl.textContent = raceState.countdown;
+    } else {
+      clearInterval(cd);
+      raceCountdownEl.textContent = 'GO!';
+      setTimeout(()=> raceCountdownEl.textContent = '', 800);
+      raceState.running = true;
+      // start race timer
+      raceState.timerInterval = setInterval(()=> { if (!raceState.paused && raceState.running) { raceState.time++; updateRaceScoreboard(); } }, 1000);
+    }
+  }, 1000);
+}
 
-let puck={x:400,y:200,radius:10,vx:0,vy:0};
-let players=[
- {x:200,y:200,radius:15,color:"red",up:"w",down:"s",left:"a",right:"d"},
- {x:600,y:200,radius:15,color:"blue",up:"i",down:"k",left:"j",right:"l"}
+// pause/resume
+function toggleRacePause(){
+  if (!raceState.running) return;
+  raceState.paused = !raceState.paused;
+  if (!raceState.paused) {
+    // resume
+  }
+}
+function resetRace(){
+  cars.forEach((c,i)=>{ c.laps = 0; c.crossed=false; c.x = track.cx + (i*30-15); c.y = track.cy - track.outerR + 30; c.angle = 0; c.speed = 0; });
+  raceState.time = 0;
+  raceState.running = false;
+  raceState.paused = false;
+  raceState.confetti = [];
+  clearInterval(raceState.timerInterval);
+  raceCountdownEl.textContent = '';
+  updateRaceScoreboard();
+}
+
+/* =========================
+   HOCKEY GAME
+   - two players (WASD & IJKL)
+   - puck physics
+   - static nets
+   - goalie AI (simple left-right patrol)
+   - confetti on goal + scoreboard + 2min timer
+========================= */
+const hockeyCanvas = document.getElementById('hockeyCanvas');
+const hctx = hockeyCanvas.getContext('2d');
+const hockeyScoreEl = document.getElementById('hockeyScore');
+
+let hockeyState = {
+  running: false,
+  timer: 120,
+  confetti: []
+};
+
+// players for hockey
+const hockeyPlayers = [
+  { x: 200, y: 220, r: 16, color: '#e74c3c', keys:{up:'w',down:'s',left:'a',right:'d'}},
+  { x: 600, y: 220, r: 16, color: '#3498db', keys:{up:'i',down:'k',left:'j',right:'l'}}
 ];
-let keys={},nets=[{x:0,y:150,width:20,height:100},{x:780,y:150,width:20,height:100}];
-let scores=[0,0],confetti2=[],timer=120,gameRunning=false,hockeyInterval=null,timerInterval=null;
 
-function drawRink(){
-  hctx.fillStyle="#87ceeb";hctx.fillRect(0,0,800,400);
-  hctx.strokeStyle="white";hctx.beginPath();hctx.moveTo(400,0);hctx.lineTo(400,400);hctx.stroke();
-  nets.forEach(net=>{hctx.fillStyle="red";hctx.fillRect(net.x,net.y,net.width,net.height);hctx.fillStyle="white";hctx.fillRect(net.x+2,net.y+2,net.width-4,net.height-4);});
+// puck
+let puck = { x:400, y: 200, vx:0, vy:0, r:10 };
+
+// nets (static)
+const netsH = [
+  { x: 0, y: 170, w: 22, h: 100 },      // left
+  { x: 778, y: 170, w: 22, h: 100 }     // right
+];
+
+// simple goalie AI (two goalies that move in crease horizontally)
+const goalies = [
+  { x: 40, y: 190, w: 8, h: 80, dir: 1, minY: 170, maxY: 210, speed: 0.9 },
+  { x: 752, y: 190, w: 8, h: 80, dir: -1, minY: 170, maxY: 210, speed: 0.9 }
+];
+
+function drawHockeyArena(){
+  // ice background
+  hctx.fillStyle = '#e6f7ff';
+  hctx.fillRect(0,0,hockeyCanvas.width,hockeyCanvas.height);
+  // center line
+  hctx.strokeStyle = '#ffffff';
+  hctx.lineWidth = 3;
+  hctx.beginPath(); hctx.moveTo(400,0); hctx.lineTo(400,440); hctx.stroke();
+  // center circle
+  hctx.strokeStyle = '#bfe6ff'; hctx.lineWidth = 2;
+  hctx.beginPath(); hctx.arc(400,220,60,0,Math.PI*2); hctx.stroke();
+
+  // nets
+  netsH.forEach(net => {
+    hctx.fillStyle = '#c0392b'; // posts
+    hctx.fillRect(net.x, net.y, net.w, net.h);
+    // white inside
+    hctx.fillStyle = '#fff';
+    hctx.fillRect(net.x+2, net.y+2, net.w-4, net.h-4);
+    // net grid
+    hctx.strokeStyle = '#e0e0e0';
+    hctx.lineWidth = 1;
+    for (let yy = net.y + 4; yy < net.y + net.h - 4; yy += 8) {
+      hctx.beginPath(); hctx.moveTo(net.x + 4, yy); hctx.lineTo(net.x + net.w - 4, yy); hctx.stroke();
+    }
+    for (let xx = net.x + 4; xx < net.x + net.w - 4; xx += 6) {
+      hctx.beginPath(); hctx.moveTo(xx, net.y + 4); hctx.lineTo(xx, net.y + net.h - 4); hctx.stroke();
+    }
+  });
 }
-function drawPuck(){hctx.fillStyle="black";hctx.beginPath();hctx.arc(puck.x,puck.y,puck.radius,0,Math.PI*2);hctx.fill();}
-function drawPlayers(){players.forEach(p=>{hctx.fillStyle=p.color;hctx.beginPath();hctx.arc(p.x,p.y,p.radius,0,Math.PI*2);hctx.fill();});}
-function updatePuck(){puck.x+=puck.vx;puck.y+=puck.vy;puck.vx*=0.98;puck.vy*=0.98;
- if(puck.x-puck.radius<0||puck.x+puck.radius>800)puck.vx*=-1;
- if(puck.y-puck.radius<0||puck.y+puck.radius>400)puck.vy*=-1;
- players.forEach(p=>{let dx=puck.x-p.x,dy=puck.y-p.y,dist=Math.sqrt(dx*dx+dy*dy);
-   if(dist<p.radius+puck.radius){puck.vx=dx/dist*5;puck.vy=dy/dist*5;}});
- nets.forEach((net,i)=>{if(puck.x>net.x&&puck.x<net.x+net.width&&puck.y>net.y&&puck.y<net.y+net.height){scores[i==0?1:0]++;resetPuck();launchConfetti2();}});
+
+function drawHockeyPlayers(){
+  hockeyPlayers.forEach(p => {
+    hctx.fillStyle = p.color;
+    hctx.beginPath(); hctx.arc(p.x, p.y, p.r, 0, Math.PI*2); hctx.fill();
+    hctx.fillStyle = '#111';
+    hctx.font = '12px Arial';
+    hctx.fillText('P', p.x-6, p.y+4);
+  });
 }
-function resetPuck(){puck.x=400;puck.y=200;puck.vx=0;puck.vy=0;}
-function launchConfetti2(){for(let i=0;i<100;i++){confetti2.push({x:Math.random()*800,y:0,size:Math.random()*6+2,speed:Math.random()*3+2,color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)]});}}
-function drawConfetti2(){confetti2.forEach(c=>{hctx.fillStyle=c.color;hctx.fillRect(c.x,c.y,c.size,c.size);c.y+=c.speed;});confetti2=confetti2.filter(c=>c.y<400);}
-function hockeyLoop(){hctx.clearRect(0,0,800,400);drawRink();drawPuck();drawPlayers();drawConfetti2();if(gameRunning)updatePuck();requestAnimationFrame(hockeyLoop);}
-function updateScoreboard(){document.getElementById("hockeyScoreboard").firstChild.textContent=`Player 1: ${scores[0]} | Player 2: ${scores[1]} | Timer: ${String(Math.floor(timer/60)).padStart(2,"0")}:${String(timer%60).padStart(2,"0")}`;}
-function startHockey(){playMusic();gameRunning=true;if(!timerInterval){timerInterval=setInterval(()=>{if(timer>0&&gameRunning){timer--;updateScoreboard();}},1000);}}
-function pauseHockey(){gameRunning=false;}
-function restartHockey(){scores=[0,0];timer=120;resetPuck();updateScoreboard();}
-window.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
-window.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
-function movePlayers(){if(keys["w"])players[0].y-=4;if(keys["s"])players[0].y+=4;if(keys["a"])players[0].x-=4;if(keys["d"])players[0].x+=4;
-if(keys["i"])players[1].y-=4;if(keys["k"])players[1].y+=4;if(keys["j"])players[1].x-=4;if(keys["l"])players[1].x+=4;}
-setInterval(movePlayers,20);
+
+function drawPuck(){
+  hctx.fillStyle = '#111';
+  hctx.beginPath(); hctx.arc(puck.x, puck.y, puck.r, 0, Math.PI*2); hctx.fill();
+  // laces/shine
+  hctx.fillStyle = '#fff'; hctx.fillRect(puck.x-2, puck.y-2, 4, 2);
+}
+
+function updatePuckPhysics(){
+  puck.x += puck.vx;
+  puck.y += puck.vy;
+  puck.vx *= 0.985;
+  puck.vy *= 0.985;
+  // collisions with walls (bounce)
+  if (puck.y - puck.r < 0) { puck.y = puck.r; puck.vy *= -0.9; }
+  if (puck.y + puck.r > hockeyCanvas.height) { puck.y = hockeyCanvas.height - puck.r; puck.vy *= -0.9; }
+  if (puck.x - puck.r < 0) { puck.x = puck.r; puck.vx *= -0.9; }
+  if (puck.x + puck.r > hockeyCanvas.width) { puck.x = hockeyCanvas.width - puck.r; puck.vx *= -0.9; }
+
+  // check players collisions (player pushes puck)
+  hockeyPlayers.forEach(p => {
+    const dx = puck.x - p.x, dy = puck.y - p.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < puck.r + p.r) {
+      // push based on angle
+      const nx = dx / dist, ny = dy / dist;
+      puck.vx = nx * 6;
+      puck.vy = ny * 6;
+    }
+  });
+
+  // check net scoring (only if fully inside net rect)
+  netsH.forEach((net, idx) => {
+    if (puck.x > net.x && puck.x < net.x + net.w && puck.y > net.y && puck.y < net.y + net.h) {
+      // scorer is opposite side index: if left net (idx 0), player 2 scores
+      const scorer = idx === 0 ? 1 : 0;
+      scores[scorer] += 1;
+      hockeyState.confetti = hockeyState.confetti.concat(makeConfettiArray(80, hockeyCanvas.width, hockeyCanvas.height));
+      playMusicOnce();
+      resetPuckAndUpdate();
+    }
+  });
+}
+
+function resetPuckAndUpdate() {
+  puck.x = 400; puck.y = 200; puck.vx = 0; puck.vy = 0;
+  updateHockeyScoreboard();
+}
+
+function drawGoalies() {
+  goalies.forEach(g => {
+    hctx.fillStyle = '#666';
+    hctx.fillRect(g.x, g.y, g.w, g.h);
+  });
+}
+
+function updateGoalies(){
+  // simple patrol between minY..maxY (vertical slight movement)
+  goalies.forEach(g => {
+    g.y += g.dir * g.speed;
+    if (g.y < g.minY) { g.y = g.minY; g.dir = 1; }
+    if (g.y > g.maxY) { g.y = g.maxY; g.dir = -1; }
+    // optionally, if puck near goal, goalie can try to move towards puck Y
+    // add slight tracking
+    const targetY = Math.max(g.minY, Math.min(g.maxY, puck.y - g.h/2));
+    g.y += (targetY - g.y) * 0.02;
+  });
+}
+
+function drawConfettiHockey() {
+  hockeyState.confetti.forEach(c => {
+    hctx.fillStyle = c.color;
+    hctx.fillRect(c.x, c.y, c.size, c.size);
+    c.y += c.speed;
+  });
+  hockeyState.confetti = hockeyState.confetti.filter(c => c.y < hockeyCanvas.height);
+}
+
+// scoreboard + timer
+let scores = [0,0];
+function updateHockeyScoreboard(){
+  hockeyScoreEl.textContent = `Player 1: ${scores[0]} | Player 2: ${scores[1]} | Timer: ${formatTimeSeconds(hockeyState.timer)}`;
+}
+
+// hockey main loop
+function hockeyLoop() {
+  hctx.clearRect(0,0,hockeyCanvas.width,hockeyCanvas.height);
+  drawHockeyArena();
+  drawGoalies();
+  drawPuck();
+  drawHockeyPlayers();
+  drawConfettiHockey();
+  if (hockeyState.running) {
+    updatePuckPhysics();
+    updateGoalies();
+  }
+  requestAnimationFrame(hockeyLoop);
+}
 hockeyLoop();
+
+// player movement for hockey
+const hockeyKeys = {};
+window.addEventListener('keydown', (e) => { hockeyKeys[e.key.toLowerCase()] = true; });
+window.addEventListener('keyup', (e) => { hockeyKeys[e.key.toLowerCase()] = false; });
+
+function moveHockeyPlayers() {
+  // player 1 WASD
+  if (hockeyKeys['w']) hockeyPlayers[0].y -= 4;
+  if (hockeyKeys['s']) hockeyPlayers[0].y += 4;
+  if (hockeyKeys['a']) hockeyPlayers[0].x -= 4;
+  if (hockeyKeys['d']) hockeyPlayers[0].x += 4;
+  // player 2 IJKL
+  if (hockeyKeys['i']) hockeyPlayers[1].y -= 4;
+  if (hockeyKeys['k']) hockeyPlayers[1].y += 4;
+  if (hockeyKeys['j']) hockeyPlayers[1].x -= 4;
+  if (hockeyKeys['l']) hockeyPlayers[1].x += 4;
+
+  // bounds
+  hockeyPlayers.forEach(p=>{
+    p.x = Math.max(p.r, Math.min(hockeyCanvas.width - p.r, p.x));
+    p.y = Math.max(p.r, Math.min(hockeyCanvas.height - p.r, p.y));
+  });
+}
+setInterval(moveHockeyPlayers, 20);
+
+// hockey control functions
+function startHockey() {
+  playMusicOnce();
+  hockeyState.running = true;
+  if (!hockeyInterval) hockeyInterval = setInterval(()=> {
+    if (hockeyState.running && hockeyState.timer > 0) {
+      hockeyState.timer--;
+      updateHockeyScoreboard();
+      if (hockeyState.timer <= 0) {
+        hockeyState.running = false;
+        alert(`Time's up! Final: ${scores[0]} - ${scores[1]}`);
+      }
+    }
+  }, 1000);
+}
+function pauseHockey() { hockeyState.running = !hockeyState.running; }
+function restartHockey() {
+  scores = [0,0];
+  hockeyState.timer = 120;
+  hockeyState.running = false;
+  resetPuckAndUpdate();
+  updateHockeyScoreboard();
+}
+
+/* init scoreboard displays */
+updateRaceScoreboard();
+updateHockeyScoreboard();
+
+/* small safety: ensure music user gesture start for mobile - clicking a Start button will trigger playMusicOnce() */
 </script>
 </body>
 </html>
