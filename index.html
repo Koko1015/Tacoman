@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The-Fantasy-Fan</title>
 <style>
-body { text-align:center; font-family: Arial, sans-serif; background:#f0f0f0; margin:0; padding:0;}
+body { margin:0; font-family: Arial, sans-serif; background:#f0f0f0; text-align:center; }
 header { margin:20px; }
 .logo { display:inline-block; }
 .logo-jersey { width:150px; height:150px; background:linear-gradient(to bottom, red 33%, white 33% 66%, blue 66%);
@@ -13,185 +13,185 @@ header { margin:20px; }
 .logo-jersey::after { content:"10"; position:absolute; top:40%; left:50%; transform:translate(-50%,-50%);
  font-size:40px; font-weight:bold; color:black; }
 .logo-text { font-family:cursive; font-size:28px; margin-top:10px; }
-canvas { display:block; margin:20px auto; border:2px solid #000; }
-#footballScoreboard,#hockeyScoreboard { font-size:18px; margin:10px auto; width:400px; padding:8px; border-radius:8px; font-weight:bold; color:white; }
-#footballScoreboard { background: linear-gradient(to right, orange, pink, lime); }
+section { margin-bottom:50px; }
+canvas { display:block; margin:20px auto; border:2px solid #000; background:#eee; }
+#raceScoreboard, #hockeyScoreboard { font-size:18px; margin:10px auto; width:400px; padding:8px; border-radius:8px; font-weight:bold; color:white; }
+#raceScoreboard { background: linear-gradient(to right, orange, pink, lime); }
 #hockeyScoreboard { background: linear-gradient(to right, blue, cyan, purple); }
 button { margin:5px; padding:6px 12px; font-size:14px; cursor:pointer; }
+.countdown { font-size:48px; font-weight:bold; color:red; margin:10px; }
 </style>
 </head>
 <body>
 
 <header>
-<div class="logo">
-  <div class="logo-jersey"></div>
-  <div class="logo-text">The-Fantasy-Fan</div>
-</div>
-<p>Your Fantasy Picks and updates weekly. Tell your friends!</p>
+  <div class="logo">
+    <div class="logo-jersey"></div>
+    <div class="logo-text">The-Fantasy-Fan</div>
+  </div>
+  <p>Your Fantasy Picks and updates weekly. Tell your friends!</p>
 </header>
 
-<h2>🏈 Field Goal Kicker</h2>
-<div id="footballScoreboard">Score: 0</div>
-<canvas id="footballGame" width="800" height="400"></canvas>
+<!-- RACE CAR GAME -->
+<section id="raceSection">
+<h2>🏎️ 2-Player Race Car Challenge</h2>
+<div id="raceScoreboard">Player 1 Laps: 0 | Player 2 Laps: 0 | Timer: 00:00</div>
+<div class="countdown" id="raceCountdown"></div>
+<canvas id="raceGame" width="800" height="400"></canvas>
+</section>
 
+<!-- HOCKEY GAME -->
+<section id="hockeySection">
 <h2>🏒 2-Player Hockey Challenge</h2>
 <div id="hockeyScoreboard">
 Player 1: 0 | Player 2: 0 | Timer: 02:00
 <br>
 <button onclick="startHockey()">Start</button>
 <button onclick="pauseHockey()">Pause</button>
+<button onclick="restartHockey()">Restart</button>
 </div>
 <canvas id="hockeyGame" width="800" height="400"></canvas>
+</section>
+
+<audio id="bgMusic" loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
 
 <script>
-// ===== FOOTBALL GAME =====
-const fbCanvas = document.getElementById("footballGame");
-const fbCtx = fbCanvas.getContext("2d");
-let fbBall = {x:400,y:350,radius:15,dragging:false,vx:0,vy:0};
-let fbScore = 0;
-let fbConfetti = [];
+// ========================
+// SHARED BACKGROUND MUSIC
+// ========================
+const bgMusic = document.getElementById('bgMusic');
+function playMusic(){ if(bgMusic.paused) bgMusic.play(); }
 
-function drawFootballField(){
-  fbCtx.fillStyle="green"; fbCtx.fillRect(0,0,fbCanvas.width,fbCanvas.height);
-  fbCtx.fillStyle="white";
-  for(let i=50;i<fbCanvas.height;i+=50) fbCtx.fillRect(0,i,fbCanvas.width,2);
-  fbCtx.fillStyle="lightblue";
-  fbCtx.fillRect(0,0,fbCanvas.width,50); fbCtx.fillRect(0,fbCanvas.height-50,fbCanvas.width,50);
-  fbCtx.fillStyle="black"; fbCtx.font="20px Arial";
-  fbCtx.fillText("Have Fun",20,30); fbCtx.fillText("Have Fun",20,fbCanvas.height-20);
-  fbCtx.strokeStyle="yellow"; fbCtx.lineWidth=5;
-  fbCtx.beginPath(); fbCtx.moveTo(350,100); fbCtx.lineTo(350,50);
-  fbCtx.lineTo(450,50); fbCtx.lineTo(450,100); fbCtx.stroke();
+// ========================
+// RACE CAR GAME
+// ========================
+const raceCanvas = document.getElementById('raceGame');
+const raceCtx = raceCanvas.getContext('2d');
+let countdownEl = document.getElementById('raceCountdown');
+
+const track = { x:50, y:50, width:700, height:300 }; // simple rectangle track for demo
+const spikes = [];
+for(let i=0;i<20;i++){
+  spikes.push({x:Math.random()*track.width+track.x, y:Math.random()*track.height+track.y, size:10});
 }
 
-function drawFootball(){
-  fbCtx.fillStyle="brown"; fbCtx.beginPath(); fbCtx.arc(fbBall.x,fbBall.y,fbBall.radius,0,Math.PI*2); fbCtx.fill();
-  fbCtx.strokeStyle="white"; fbCtx.stroke();
-}
-
-function fbUpdate(){
-  if(!fbBall.dragging){
-    fbBall.x+=fbBall.vx; fbBall.y+=fbBall.vy; fbBall.vy+=0.2;
-    if(fbBall.y>fbCanvas.height-fbBall.radius){ fbBall.y=fbCanvas.height-fbBall.radius; fbBall.vy=0; fbBall.vx=0; }
-    if(fbBall.y<100 && fbBall.x>350 && fbBall.x<450){
-      fbScore++; document.getElementById("footballScoreboard").textContent="Score: "+fbScore;
-      launchFbConfetti(); resetFootball();
-    }
-  }
-}
-
-function fbDrawConfetti(){
-  fbConfetti.forEach(c=>{ fbCtx.fillStyle=c.color; fbCtx.fillRect(c.x,c.y,c.size,c.size); c.y+=c.speed; });
-  fbConfetti=fbConfetti.filter(c=>c.y<fbCanvas.height);
-}
-
-function launchFbConfetti(){
-  for(let i=0;i<100;i++){
-    fbConfetti.push({x:Math.random()*fbCanvas.width,y:0,size:Math.random()*6+2,speed:Math.random()*3+2,
-      color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)]});
-  }
-}
-
-function resetFootball(){ fbBall.x=400; fbBall.y=350; fbBall.vx=0; fbBall.vy=0; }
-
-function footballLoop(){
-  fbCtx.clearRect(0,0,fbCanvas.width,fbCanvas.height);
-  drawFootballField(); drawFootball(); fbUpdate(); fbDrawConfetti();
-  requestAnimationFrame(footballLoop);
-}
-
-fbCanvas.addEventListener("mousedown",e=>{ let dx=e.offsetX-fbBall.x,dy=e.offsetY-fbBall.y;
-if(Math.sqrt(dx*dx+dy*dy)<fbBall.radius) fbBall.dragging=true; });
-fbCanvas.addEventListener("mousemove",e=>{ if(fbBall.dragging){ fbBall.x=e.offsetX; fbBall.y=e.offsetY; } });
-fbCanvas.addEventListener("mouseup",e=>{ if(fbBall.dragging){ fbBall.vx=(fbBall.x-e.offsetX)*-0.2; fbBall.vy=(fbBall.y-e.offsetY)*-0.2; fbBall.dragging=false; } });
-footballLoop();
-
-// ===== HOCKEY GAME =====
-const hockeyCanvas=document.getElementById("hockeyGame");
-const hctx=hockeyCanvas.getContext("2d");
-
-let puck={x:400,y:200,radius:10,vx:0,vy:0};
-let players=[
-  {x:200,y:200,radius:15,color:"red",up:"w",down:"s",left:"a",right:"d"},
-  {x:600,y:200,radius:15,color:"blue",up:"i",down:"k",left:"j",right:"l"}
+const cars = [
+  {x:100, y:100, color:"red", angle:0, speed:0, laps:0, keys:{up:'w',down:'s',left:'a',right:'d'}},
+  {x:200, y:120, color:"blue", angle:0, speed:0, laps:0, keys:{up:'i',down:'k',left:'j',right:'l'}}
 ];
-let keys={};
-let nets=[{x:0,y:150,width:20,height:100},{x:780,y:150,width:20,height:100}];
-let scores=[0,0]; let confetti2=[]; let timer=120; let gameRunning=false; let intervalId=null;
 
-function drawHockeyRink(){
-  hctx.fillStyle="#87ceeb"; hctx.fillRect(0,0,hockeyCanvas.width,hockeyCanvas.height);
-  hctx.strokeStyle="white"; hctx.beginPath(); hctx.moveTo(400,0); hctx.lineTo(400,hockeyCanvas.height); hctx.stroke();
-  nets.forEach(net=>{ hctx.fillStyle="red"; hctx.fillRect(net.x,net.y,net.width,net.height);
-    hctx.fillStyle="white"; hctx.fillRect(net.x+2,net.y+2,net.width-4,net.height-4); });
-}
+let raceKeys={};
+let raceTime=0; // seconds
+let raceRunning=false;
+let raceCountdown=3;
+let raceInterval, raceCountdownInterval;
 
-function drawHockeyPuck(){
-  hctx.fillStyle="black"; hctx.beginPath(); hctx.arc(puck.x,puck.y,puck.radius,0,Math.PI*2); hctx.fill();
-}
+function drawTrack(){
+  raceCtx.fillStyle="#555"; raceCtx.fillRect(track.x,track.y,track.width,track.height);
+  // Track borders
+  raceCtx.strokeStyle="yellow"; raceCtx.lineWidth=5;
+  raceCtx.strokeRect(track.x,track.y,track.width,track.height);
+  // Draw spikes
+  spikes.forEach(s=>{
+    raceCtx.fillStyle="black"; raceCtx.beginPath(); raceCtx.moveTo(s.x,s.y-s.size); 
+    raceCtx.lineTo(s.x-s.size,s.y+s.size); raceCtx.lineTo(s.x+s.size,s.y+s.size); raceCtx.closePath(); raceCtx.fill();
+  });
+});
 
-function drawHockeyPlayers(){
-  players.forEach(p=>{ hctx.fillStyle=p.color; hctx.beginPath(); hctx.arc(p.x,p.y,p.radius,0,Math.PI*2); hctx.fill(); });
-}
-
-function updatePuckHockey(){
-  puck.x+=puck.vx; puck.y+=puck.vy; puck.vx*=0.98; puck.vy*=0.98;
-  if(puck.y-puck.radius<0 || puck.y+puck.radius>hockeyCanvas.height) puck.vy*=-1;
-
-  // Goal check: only inside net
-  if(puck.x-puck.radius<=nets[0].x+nets[0].width && puck.y>nets[0].y && puck.y<nets[0].y+nets[0].height){
-    scores[1]++; resetPuckHockey(); launchConfettiHockey();
-  }
-  if(puck.x+puck.radius>=nets[1].x && puck.y>nets[1].y && puck.y<nets[1].y+nets[1].height){
-    scores[0]++; resetPuckHockey(); launchConfettiHockey();
-  }
-  if(puck.x-puck.radius<0) puck.x=puck.radius;
-  if(puck.x+puck.radius>hockeyCanvas.width) puck.x=hockeyCanvas.width-puck.radius;
-}
-
-function updatePlayersHockey(){
-  players.forEach(p=>{
-    if(keys[p.up]) p.y-=3; if(keys[p.down]) p.y+=3;
-    if(keys[p.left]) p.x-=3; if(keys[p.right]) p.x+=3;
-    p.x=Math.max(p.radius,Math.min(hockeyCanvas.width-p.radius,p.x));
-    p.y=Math.max(p.radius,Math.min(hockeyCanvas.height-p.radius,p.y));
-    let dx=puck.x-p.x,dy=puck.y-p.y,dist=Math.sqrt(dx*dx+dy*dy);
-    if(dist<p.radius+puck.radius){ puck.vx=dx*0.3; puck.vy=dy*0.3; }
+function drawCars(){
+  cars.forEach(c=>{
+    raceCtx.save();
+    raceCtx.translate(c.x,c.y);
+    raceCtx.rotate(c.angle);
+    raceCtx.fillStyle=c.color;
+    raceCtx.fillRect(-10,-15,20,30);
+    raceCtx.restore();
   });
 }
 
-function resetPuckHockey(){ puck.x=400; puck.y=200; puck.vx=0; puck.vy=0; updateHockeyScoreboard(); }
-
-function updateHockeyScoreboard(){
-  document.getElementById("hockeyScoreboard").innerHTML=`Player 1: ${scores[0]} | Player 2: ${scores[1]} | Timer: ${String(Math.floor(timer/60)).padStart(2,"0")}:${String(timer%60).padStart(2,"0")}<br>
-  <button onclick="startHockey()">Start</button> <button onclick="pauseHockey()">Pause</button>`;
+function updateCars(){
+  cars.forEach(c=>{
+    // Controls
+    if(raceKeys[c.keys.up]) c.speed+=0.2;
+    if(raceKeys[c.keys.down]) c.speed-=0.2;
+    if(raceKeys[c.keys.left]) c.angle -=0.05;
+    if(raceKeys[c.keys.right]) c.angle +=0.05;
+    // Friction
+    c.speed *=0.95;
+    // Move
+    c.x += Math.sin(c.angle)*c.speed;
+    c.y -= Math.cos(c.angle)*c.speed;
+    // Keep on track
+    c.x = Math.max(track.x, Math.min(track.x+track.width, c.x));
+    c.y = Math.max(track.y, Math.min(track.y+track.height, c.y));
+    // Spike collision
+    spikes.forEach(s=>{
+      let dx=c.x-s.x, dy=c.y-s.y;
+      if(Math.sqrt(dx*dx+dy*dy)<20) c.speed*=0.3;
+    });
+    // Lap check (simple demo: cross top border)
+    if(c.y<=track.y && !c.crossed){ c.laps++; c.crossed=true; launchConfetti(); }
+    if(c.y>track.y) c.crossed=false;
+  });
+  updateRaceScoreboard();
 }
 
-function drawConfettiHockey(){
-  confetti2.forEach(c=>{ hctx.fillStyle=c.color; hctx.fillRect(c.x,c.y,c.size,c.size); c.y+=c.speed; });
-  confetti2=confetti2.filter(c=>c.y<hockeyCanvas.height);
+function updateRaceScoreboard(){
+  raceCtx.fillStyle="black";
+  document.getElementById('raceScoreboard').textContent =
+    `Player 1 Laps: ${cars[0].laps} | Player 2 Laps: ${cars[1].laps} | Timer: ${String(Math.floor(raceTime/60)).padStart(2,"0")}:${String(raceTime%60).padStart(2,"0")}`;
 }
 
-function launchConfettiHockey(){
-  for(let i=0;i<100;i++){ confetti2.push({ x:Math.random()*hockeyCanvas.width, y:0, size:Math.random()*6+2, speed:Math.random()*3+2, color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)] }); }
+function launchConfetti(){
+  for(let i=0;i<100;i++){
+    confetti.push({ x:Math.random()*raceCanvas.width, y:0, size:Math.random()*6+2, speed:Math.random()*3+2,
+      color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)] });
+  }
+}
+let confetti = [];
+
+function drawConfetti(){
+  confetti.forEach(c=>{
+    raceCtx.fillStyle=c.color;
+    raceCtx.fillRect(c.x,c.y,c.size,c.size);
+    c.y+=c.speed;
+  });
+  confetti = confetti.filter(c=>c.y<raceCanvas.height);
 }
 
-function updateHockeyTimer(){ if(timer>0){ timer--; updateHockeyScoreboard(); } else{ pauseHockey(); alert(`⏰ Time's up! Final Score: ${scores[0]} - ${scores[1]}`); } }
-
-function hockeyLoop(){
-  hctx.clearRect(0,0,hockeyCanvas.width,hockeyCanvas.height);
-  drawHockeyRink(); drawHockeyPuck(); drawHockeyPlayers(); drawConfettiHockey();
-  if(gameRunning){ updatePuckHockey(); updatePlayersHockey(); }
-  requestAnimationFrame(hockeyLoop);
+function raceLoop(){
+  raceCtx.clearRect(0,0,raceCanvas.width,raceCanvas.height);
+  drawTrack();
+  drawCars();
+  drawConfetti();
+  if(raceRunning) updateCars();
+  requestAnimationFrame(raceLoop);
 }
 
-function startHockey(){ if(!gameRunning){ gameRunning=true; if(!intervalId) intervalId=setInterval(updateHockeyTimer,1000); } }
-function pauseHockey(){ gameRunning=false; clearInterval(intervalId); intervalId=null; }
+function startRaceCountdown(){
+  countdownEl.textContent = raceCountdown;
+  raceCountdownInterval = setInterval(()=>{
+    raceCountdown--;
+    if(raceCountdown>0) countdownEl.textContent=raceCountdown;
+    else{ countdownEl.textContent="GO!"; raceRunning=true; playMusic(); clearInterval(raceCountdownInterval); setTimeout(()=>countdownEl.textContent="",1000); }
+  },1000);
+  raceInterval = setInterval(()=>{ if(raceRunning) raceTime++; },1000);
+}
 
-window.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
-window.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+raceLoop();
 
-hockeyLoop();
-</script>
-</body>
-</html>
+window.addEventListener("keydown", e=>{ raceKeys[e.key.toLowerCase()]=true; });
+window.addEventListener("keyup", e=>{ raceKeys[e.key.toLowerCase()]=false; });
+
+// ========================
+// HOCKEY GAME
+// ========================
+const hockeyCanvas=document.getElementById("hockeyGame");
+const hctx=hockeyCanvas.getContext("2d");
+let puck={x:400,y:200,radius:10,vx:0,vy:0};
+let players=[
+  {x:200,y:200,radius:15,color:"red",up:"w",down:"s",left:"a",right:"d"},
+  {x:600,y:200,radius:15,color:"blue",up:"i",down:"k
+
