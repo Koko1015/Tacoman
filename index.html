@@ -5,79 +5,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The-Fantasy-Fan</title>
 <style>
-  body { text-align: center; font-family: Arial, sans-serif; background: #f0f0f0; }
-  header { margin: 20px; }
-  .logo { display: inline-block; }
-  .logo-jersey { width: 150px; height: 150px; background: linear-gradient(to bottom, red 33%, white 33% 66%, blue 66%);
-                 border: 4px solid black; border-radius: 15px; position: relative; }
-  .logo-jersey::after { content: "10"; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-                        font-size: 40px; font-weight: bold; color: black; }
-  .logo-text { font-family: cursive; font-size: 28px; margin-top: 10px; }
-  canvas { display: block; margin: 20px auto; border: 2px solid #000; }
-  #footballScoreboard, #hockeyScoreboard {
-    font-size: 18px; margin: 10px auto; width: 400px; padding: 8px; border-radius: 8px; font-weight: bold; color:white;
-  }
-  #footballScoreboard { background: linear-gradient(to right, orange, pink, lime); }
-  #hockeyScoreboard { background: linear-gradient(to right, blue, cyan, purple); }
-  button { margin: 5px; padding: 6px 12px; font-size: 14px; cursor: pointer; }
+body { text-align:center; font-family: Arial, sans-serif; background:#f0f0f0; margin:0; padding:0;}
+header { margin:20px; }
+.logo { display:inline-block; }
+.logo-jersey { width:150px; height:150px; background:linear-gradient(to bottom, red 33%, white 33% 66%, blue 66%);
+ border:4px solid black; border-radius:15px; position:relative; }
+.logo-jersey::after { content:"10"; position:absolute; top:40%; left:50%; transform:translate(-50%,-50%);
+ font-size:40px; font-weight:bold; color:black; }
+.logo-text { font-family:cursive; font-size:28px; margin-top:10px; }
+canvas { display:block; margin:20px auto; border:2px solid #000; }
+#footballScoreboard,#hockeyScoreboard { font-size:18px; margin:10px auto; width:400px; padding:8px; border-radius:8px; font-weight:bold; color:white; }
+#footballScoreboard { background: linear-gradient(to right, orange, pink, lime); }
+#hockeyScoreboard { background: linear-gradient(to right, blue, cyan, purple); }
+button { margin:5px; padding:6px 12px; font-size:14px; cursor:pointer; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">
-    <div class="logo-jersey"></div>
-    <div class="logo-text">The-Fantasy-Fan</div>
-  </div>
-  <p>Your Fantasy Picks and updates weekly. Tell your friends!</p>
+<div class="logo">
+  <div class="logo-jersey"></div>
+  <div class="logo-text">The-Fantasy-Fan</div>
+</div>
+<p>Your Fantasy Picks and updates weekly. Tell your friends!</p>
 </header>
 
-<!-- FOOTBALL GAME -->
 <h2>🏈 Field Goal Kicker</h2>
 <div id="footballScoreboard">Score: 0</div>
 <canvas id="footballGame" width="800" height="400"></canvas>
 
-<!-- HOCKEY GAME -->
 <h2>🏒 2-Player Hockey Challenge</h2>
 <div id="hockeyScoreboard">
-  Player 1: 0 | Player 2: 0 | Timer: 02:00
-  <br>
-  <button onclick="startHockey()">Start</button>
-  <button onclick="pauseHockey()">Pause</button>
+Player 1: 0 | Player 2: 0 | Timer: 02:00
+<br>
+<button onclick="startHockey()">Start</button>
+<button onclick="pauseHockey()">Pause</button>
 </div>
 <canvas id="hockeyGame" width="800" height="400"></canvas>
 
 <script>
-/* ===== FOOTBALL GAME ===== */
+// ===== FOOTBALL GAME =====
 const fbCanvas = document.getElementById("footballGame");
 const fbCtx = fbCanvas.getContext("2d");
-let fbBall = { x:400, y:350, radius:15, dragging:false, vx:0, vy:0 };
+let fbBall = {x:400,y:350,radius:15,dragging:false,vx:0,vy:0};
 let fbScore = 0;
 let fbConfetti = [];
 
-function drawFootballField() {
-  fbCtx.fillStyle = "green";
-  fbCtx.fillRect(0,0,fbCanvas.width, fbCanvas.height);
+function drawFootballField(){
+  fbCtx.fillStyle="green"; fbCtx.fillRect(0,0,fbCanvas.width,fbCanvas.height);
   fbCtx.fillStyle="white";
   for(let i=50;i<fbCanvas.height;i+=50) fbCtx.fillRect(0,i,fbCanvas.width,2);
   fbCtx.fillStyle="lightblue";
-  fbCtx.fillRect(0,0,fbCanvas.width,50);
-  fbCtx.fillRect(0,fbCanvas.height-50,fbCanvas.width,50);
+  fbCtx.fillRect(0,0,fbCanvas.width,50); fbCtx.fillRect(0,fbCanvas.height-50,fbCanvas.width,50);
   fbCtx.fillStyle="black"; fbCtx.font="20px Arial";
-  fbCtx.fillText("Have Fun",20,30);
-  fbCtx.fillText("Have Fun",20,fbCanvas.height-20);
+  fbCtx.fillText("Have Fun",20,30); fbCtx.fillText("Have Fun",20,fbCanvas.height-20);
   fbCtx.strokeStyle="yellow"; fbCtx.lineWidth=5;
   fbCtx.beginPath(); fbCtx.moveTo(350,100); fbCtx.lineTo(350,50);
   fbCtx.lineTo(450,50); fbCtx.lineTo(450,100); fbCtx.stroke();
 }
 
-function drawFootball() {
-  fbCtx.fillStyle="brown";
-  fbCtx.beginPath(); fbCtx.arc(fbBall.x, fbBall.y, fbBall.radius,0,Math.PI*2); fbCtx.fill();
+function drawFootball(){
+  fbCtx.fillStyle="brown"; fbCtx.beginPath(); fbCtx.arc(fbBall.x,fbBall.y,fbBall.radius,0,Math.PI*2); fbCtx.fill();
   fbCtx.strokeStyle="white"; fbCtx.stroke();
 }
 
-function fbUpdate() {
+function fbUpdate(){
   if(!fbBall.dragging){
     fbBall.x+=fbBall.vx; fbBall.y+=fbBall.vy; fbBall.vy+=0.2;
     if(fbBall.y>fbCanvas.height-fbBall.radius){ fbBall.y=fbCanvas.height-fbBall.radius; fbBall.vy=0; fbBall.vx=0; }
@@ -90,13 +82,13 @@ function fbUpdate() {
 
 function fbDrawConfetti(){
   fbConfetti.forEach(c=>{ fbCtx.fillStyle=c.color; fbCtx.fillRect(c.x,c.y,c.size,c.size); c.y+=c.speed; });
-  fbConfetti = fbConfetti.filter(c=>c.y<fbCanvas.height);
+  fbConfetti=fbConfetti.filter(c=>c.y<fbCanvas.height);
 }
 
 function launchFbConfetti(){
   for(let i=0;i<100;i++){
-    fbConfetti.push({ x:Math.random()*fbCanvas.width, y:0, size:Math.random()*6+2, speed:Math.random()*3+2,
-      color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)] });
+    fbConfetti.push({x:Math.random()*fbCanvas.width,y:0,size:Math.random()*6+2,speed:Math.random()*3+2,
+      color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)]});
   }
 }
 
@@ -114,9 +106,9 @@ fbCanvas.addEventListener("mousemove",e=>{ if(fbBall.dragging){ fbBall.x=e.offse
 fbCanvas.addEventListener("mouseup",e=>{ if(fbBall.dragging){ fbBall.vx=(fbBall.x-e.offsetX)*-0.2; fbBall.vy=(fbBall.y-e.offsetY)*-0.2; fbBall.dragging=false; } });
 footballLoop();
 
-/* ===== HOCKEY GAME ===== */
-const hockeyCanvas = document.getElementById("hockeyGame");
-const hctx = hockeyCanvas.getContext("2d");
+// ===== HOCKEY GAME =====
+const hockeyCanvas=document.getElementById("hockeyGame");
+const hctx=hockeyCanvas.getContext("2d");
 
 let puck={x:400,y:200,radius:10,vx:0,vy:0};
 let players=[
@@ -130,11 +122,8 @@ let scores=[0,0]; let confetti2=[]; let timer=120; let gameRunning=false; let in
 function drawHockeyRink(){
   hctx.fillStyle="#87ceeb"; hctx.fillRect(0,0,hockeyCanvas.width,hockeyCanvas.height);
   hctx.strokeStyle="white"; hctx.beginPath(); hctx.moveTo(400,0); hctx.lineTo(400,hockeyCanvas.height); hctx.stroke();
-  // Draw nets with red posts + white inside
-  nets.forEach(net=>{
-    hctx.fillStyle="red"; hctx.fillRect(net.x,net.y,net.width,net.height);
-    hctx.fillStyle="white"; hctx.fillRect(net.x+2,net.y+2,net.width-4,net.height-4);
-  });
+  nets.forEach(net=>{ hctx.fillStyle="red"; hctx.fillRect(net.x,net.y,net.width,net.height);
+    hctx.fillStyle="white"; hctx.fillRect(net.x+2,net.y+2,net.width-4,net.height-4); });
 }
 
 function drawHockeyPuck(){
@@ -142,9 +131,7 @@ function drawHockeyPuck(){
 }
 
 function drawHockeyPlayers(){
-  players.forEach(p=>{
-    hctx.fillStyle=p.color; hctx.beginPath(); hctx.arc(p.x,p.y,p.radius,0,Math.PI*2); hctx.fill();
-  });
+  players.forEach(p=>{ hctx.fillStyle=p.color; hctx.beginPath(); hctx.arc(p.x,p.y,p.radius,0,Math.PI*2); hctx.fill(); });
 }
 
 function updatePuckHockey(){
@@ -158,7 +145,6 @@ function updatePuckHockey(){
   if(puck.x+puck.radius>=nets[1].x && puck.y>nets[1].y && puck.y<nets[1].y+nets[1].height){
     scores[0]++; resetPuckHockey(); launchConfettiHockey();
   }
-  // Bounce off walls (not scoring)
   if(puck.x-puck.radius<0) puck.x=puck.radius;
   if(puck.x+puck.radius>hockeyCanvas.width) puck.x=hockeyCanvas.width-puck.radius;
 }
@@ -187,16 +173,10 @@ function drawConfettiHockey(){
 }
 
 function launchConfettiHockey(){
-  for(let i=0;i<100;i++){
-    confetti2.push({ x:Math.random()*hockeyCanvas.width, y:0, size:Math.random()*6+2, speed:Math.random()*3+2,
-      color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)] });
-  }
+  for(let i=0;i<100;i++){ confetti2.push({ x:Math.random()*hockeyCanvas.width, y:0, size:Math.random()*6+2, speed:Math.random()*3+2, color:["red","blue","yellow","pink","orange","green"][Math.floor(Math.random()*6)] }); }
 }
 
-function updateHockeyTimer(){
-  if(timer>0){ timer--; updateHockeyScoreboard(); }
-  else{ pauseHockey(); alert(`⏰ Time's up! Final Score: ${scores[0]} - ${scores[1]}`); }
-}
+function updateHockeyTimer(){ if(timer>0){ timer--; updateHockeyScoreboard(); } else{ pauseHockey(); alert(`⏰ Time's up! Final Score: ${scores[0]} - ${scores[1]}`); } }
 
 function hockeyLoop(){
   hctx.clearRect(0,0,hockeyCanvas.width,hockeyCanvas.height);
@@ -215,4 +195,3 @@ hockeyLoop();
 </script>
 </body>
 </html>
-
